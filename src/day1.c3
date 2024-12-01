@@ -1,0 +1,67 @@
+import std::io;
+import std::math;
+import std::sort;
+import std::collections::list;
+
+List(<int>) list1;
+List(<int>) list2;
+
+fn void main (String[] args) {
+  assert(args.len == 2, "Expected exactly 1 argument: the input file");
+
+  File input = file::open(args[1], "r")!!;
+
+  DString current_id;
+  short current_list = 0;
+
+  current_id.temp_init();
+
+  while (true) {
+    char! c = input.read_byte();
+    if (catch c) break;
+    if (c == ' ' || c == '\n') {
+      if (current_id.len()) {
+        int int_id = current_id.str_view().to_int()!!;
+        if (current_list == 0) { list1.push(int_id); }
+        else { list2.push(int_id); }
+        current_list = (current_list + 1)%2;
+        current_id.clear();
+      }
+
+      continue;
+    }
+
+    current_id.append(c);
+  }
+
+  io::printfn("%d %d", list1.size, list2.size);
+
+  usz distance = 0;
+  usz similarity = 0;
+  usz similarity_multiplier = 0;
+  usz last_id = 0;
+
+  quicksort(list1, fn long (int a, int b) => (long)a-b);
+  quicksort(list2, fn long (int a, int b) => (long)a-b);
+
+  for (usz i = 0; i < list1.size; i++) {
+    int left_val = list1[i];
+    if (i == 0 || last_id != left_val) {
+      similarity_multiplier = 0;
+      foreach (v : list2)
+      {
+        if (v > left_val) break;
+        if (v == left_val) similarity_multiplier++;
+      }
+    }
+
+    last_id = left_val;
+
+    similarity += left_val * similarity_multiplier;
+
+    distance += math::abs(list2[i] - left_val);
+  }
+
+  io::printfn("Distance: %d", distance);
+  io::printfn("Similarity: %d", similarity);
+}
