@@ -26,32 +26,21 @@ fn void main (String[] args) {
 
   File input = file::open(args[1], "r")!!;
 
-  DString current_id;
-
-  current_id.temp_init();
   list.temp_init();
 
   List(<int>) current_row;
   current_row.temp_init();
 
-  while (true) {
-    char! c = input.read_byte();
-    if (catch c) break;
-    if (c == ' ' || c == '\n') {
-      if (current_id.len()) {
-        int int_id = current_id.str_view().to_int()!!;
-        current_row.push(int_id);
-        current_id.clear();
-      }
+  while (try line = io::treadline(&input)) {
+    String[] splits = line.tsplit(" ");
+    assert(splits.len > 2);
 
-      if (c == '\n') {
-        list.push(current_row.to_tarray());
-        current_row.clear();
-      }
-      continue;
+    foreach (item: splits) {
+      current_row.push(item.to_int()!!);
     }
 
-    current_id.append(c);
+    list.push(current_row.to_tarray());
+    current_row.clear();
   }
 
   io::printfn("Reports: %d", list.size);

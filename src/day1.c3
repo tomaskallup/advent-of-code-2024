@@ -11,27 +11,11 @@ fn void main (String[] args) {
 
   File input = file::open(args[1], "r")!!;
 
-  DString current_id;
-  short current_list = 0;
-
-  current_id.temp_init();
-
-  while (true) {
-    char! c = input.read_byte();
-    if (catch c) break;
-    if (c == ' ' || c == '\n') {
-      if (current_id.len()) {
-        int int_id = current_id.str_view().to_int()!!;
-        if (current_list == 0) { list1.push(int_id); }
-        else { list2.push(int_id); }
-        current_list = (current_list + 1)%2;
-        current_id.clear();
-      }
-
-      continue;
-    }
-
-    current_id.append(c);
+  while (try line = io::treadline(&input)) {
+    String[] splits = line.tsplit("   ");
+    assert(splits.len == 2);
+    list1.push(splits[0].to_int()!!);
+    list2.push(splits[1].to_int()!!);
   }
 
   io::printfn("%d %d", list1.size, list2.size);
