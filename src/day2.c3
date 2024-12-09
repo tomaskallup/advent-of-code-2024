@@ -43,8 +43,6 @@ fn void main (String[] args) {
     current_row.clear();
   }
 
-  io::printfn("Reports: %d", list.size);
-
   usz safe = 0;
   usz safe_with_tolerance = 0;
 

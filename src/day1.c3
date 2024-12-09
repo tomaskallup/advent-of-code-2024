@@ -18,8 +18,6 @@ fn void main (String[] args) {
     list2.push(splits[1].to_int()!!);
   }
 
-  io::printfn("%d %d", list1.size, list2.size);
-
   usz distance = 0;
   usz similarity = 0;
   usz similarity_multiplier = 0;
