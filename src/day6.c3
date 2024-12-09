@@ -1,7 +1,6 @@
 import std::io;
 import std::collections::list;
 import std::collections::map;
-import std::collections::tuple;
 
 def Vector2 = long[<2>];
 List(<String>) map;
