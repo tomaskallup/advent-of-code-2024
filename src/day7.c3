@@ -30,25 +30,24 @@ fn long eval_operator(long a, long b, Operator op) {
   unreachable();
 }
 
-fn bool check_pair(long expected, long acc, long[] rest) {
+fn bool check_pair(long expected, long acc, long[] rest, Operator[] operators) {
   if (rest.len == 1) {
-    if (eval_operator(acc, rest[0], Operator.ADD) == expected) return true;
-    if (eval_operator(acc, rest[0], Operator.MUL) == expected) return true;
-    if (eval_operator(acc, rest[0], Operator.CONCAT) == expected) return true;
+    foreach (operator: operators) {
+      if (eval_operator(acc, rest[0], operator) == expected) return true;
+    }
     return false;
   }
-  if (check_pair(expected, eval_operator(acc, rest[0], Operator.ADD), rest[1..])) return true;
-  if (check_pair(expected, eval_operator(acc, rest[0], Operator.MUL), rest[1..])) return true;
-  if (check_pair(expected, eval_operator(acc, rest[0], Operator.CONCAT), rest[1..])) return true;
-
+  foreach (operator: operators) {
+    if (check_pair(expected, eval_operator(acc, rest[0], operator), rest[1..], operators)) return true;
+  }
   return false;
 }
 
-fn bool solve(Equation equation) {
+fn bool solve(Equation equation, Operator[] operators) {
   long expected = equation.first;
   long[] numbers = equation.second;
 
-  return check_pair(expected, 0, numbers);
+  return check_pair(expected, 0, numbers, operators);
 }
 
 fn void main (String[] args) {
@@ -72,11 +71,18 @@ fn void main (String[] args) {
     equations.push(*equation);
   }
 
-  long valid_sum = 0;
+  long valid_sum_first = 0;
+  long valid_sum_second = 0;
 
   foreach (equation: equations) {
-    if (solve(equation)) valid_sum += equation.first;
+    if (solve(equation, { Operator.ADD, Operator.MUL })) {
+      valid_sum_first += equation.first;
+      valid_sum_second += equation.first;
+    } else if (solve(equation, { Operator.ADD, Operator.MUL, Operator.CONCAT })) {
+      valid_sum_second += equation.first;
+    }
   }
 
-  io::printfn("Valid equations sum: %d", valid_sum);
+  io::printfn("Valid equations sum: %d", valid_sum_first);
+  io::printfn("Valid equations sum (with ||): %d", valid_sum_second);
 }
