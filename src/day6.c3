@@ -10,24 +10,36 @@ usz map_height;
 List(<Vector2>) loopable_positions;
 
 fn String Vector2.to_key(&self) {
-  return string::tformat("%d,%d", self.x, self.y);
+  return string::tformat("%d,%d", self.y, self.x);
+}
+
+macro bool Vector2.is_out_of_bounds(&self) {
+  return self.y < 0 || self.x < 0 || self.y >= map_height || self.x >= map_width;
 }
 
 struct Guard {
   Vector2 position;
   Vector2 direction;
+  Vector2 blockade;
   HashMap(<String, List(<Vector2>)*>) visited_nodes;
 }
 
-fn bool Guard.can_loop(&self) {
-  // Create a rotated copy
+fn bool Guard.can_loop(&self, Vector2 blockade) {
+  // Create a copy one step back (before the blockade)
   Guard copy;
-  copy.position = self.position;
-  copy.direction = { -self.direction.y, self.direction.x };
+  copy.position = self.position - self.direction;
+  copy.direction = self.direction;
   copy.visited_nodes.temp_init();
+  copy.blockade = blockade;
+
+  defer {|
+    if (blockade.to_key() == "101,91") {
+      copy.write_map("map_101-91.txt");
+    }
+  |};
 
   // Check if the copy gets stuck in a loop
-  while (copy.advance()) {
+  while (copy.advance(true)) {
     // Simple check if we ended up back at the start
     if (copy.position == self.position && copy.direction == self.direction) return true;
 
@@ -42,7 +54,7 @@ fn bool Guard.can_loop(&self) {
   return false;
 }
 
-fn bool Guard.advance(&self) {
+fn bool Guard.advance(&self, bool custom_blockade = false) {
   bool obstacle_in_front = false;
 
   String key = self.position.to_key();
@@ -53,11 +65,14 @@ fn bool Guard.advance(&self) {
   Vector2 start_direction = self.direction;
   while(true) {
     new_pos = self.position + self.direction;
-    bool left_map = new_pos.y < 0 || new_pos.x < 0 || new_pos.y >= map_height || new_pos.x >= map_width;
+    bool left_map = new_pos.is_out_of_bounds();
 
     if (left_map) return false;
 
-    if (map[new_pos.y][new_pos.x] != '#') {
+    char map_char = map[new_pos.y][new_pos.x];
+    if (custom_blockade && new_pos == self.blockade) map_char = '#';
+
+    if (map_char != '#') {
       break;
     }
 
@@ -67,6 +82,41 @@ fn bool Guard.advance(&self) {
   self.position = new_pos;
 
   return true;
+}
+
+fn usz Guard.write_map(&self, String name) {
+  File output = file::open(name, "w")!!;
+
+  usz! len;
+
+  foreach(y, line: map) {
+    foreach(x, ch: line) {
+      Vector2 pos = {x,y};
+      if (self.blockade == pos) { len+=output.write("O"); }
+      else if (ch == '#') { len+=output.write("#"); }
+      else if (self.position == pos) {
+        switch (self.direction) {
+          case {0, -1}: len+=output.write("^");
+          case {0, 1}: len+=output.write("v");
+          case {1, 0}: len+=output.write(">");
+          case {-1, 0}: len+=output.write("<");
+        }
+      } else if (try visited_directions = self.visited_nodes.get(pos.to_key())) {
+        if (visited_directions.len() > 1) {
+          len+=output.write("+");
+        } else if (visited_directions.get(0).x == 0) {
+          len+=output.write("|");
+        } else if (visited_directions.get(0).y == 0) {
+          len+=output.write("-");
+        }
+      } else {
+        len+=output.write(".");
+      }
+    }
+    len+=output.write("\n");
+  }
+
+  return len!!;
 }
 
 fn void main (String[] args) {
@@ -103,11 +153,26 @@ fn void main (String[] args) {
 
   Vector2 start_pos = guard.position;
 
-  while(guard.advance()) {
-    Vector2 obstacle_pos = guard.position + guard.direction;
-    if (obstacle_pos != start_pos && !loopable_positions.contains(obstacle_pos) && guard.can_loop()) {
+  do {
+    Vector2 obstacle_pos = guard.position;
+    /* if (obstacle_pos.to_key() == "101,91") {
+      io::printn(obstacle_pos);
+    } */
+    if (obstacle_pos.is_out_of_bounds()) continue;
+
+    if (try guard.visited_nodes.get(obstacle_pos.to_key())) continue;
+    if (obstacle_pos != start_pos && guard.can_loop(obstacle_pos)) {
       loopable_positions.push(obstacle_pos);
     }
+  } while(guard.advance());
+
+  guard.write_map("map_original.txt");
+
+  File output = file::open("my_out", "w")!!;
+
+  foreach(obstacle_pos: loopable_positions) {
+    output.write(obstacle_pos.to_key())!!;
+    output.write("\n")!!;
   }
 
   io::printfn("Visited nodes: %d", guard.visited_nodes.len());
