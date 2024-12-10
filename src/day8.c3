@@ -37,10 +37,6 @@ fn usz Map.write(&self) {
 
 Map map;
 
-fn String Vec2f.to_key(&self) {
-  return string::tformat("%d,%d", self.y, self.x);
-}
-
 def Positions = List(<Vec2f>);
 
 HashMap(<char, Positions*>) frequencies;
@@ -95,8 +91,6 @@ fn void main (String[] args) {
           Vec2f target = antinode[0];
           Vec2f direction = antinode[1];
           while (map.vec_in_bounds(target)) {
-            String key = target.to_key();
-
             if (!antinodes_resonant.contains(target)) {
               antinodes_resonant.push(target);
 
