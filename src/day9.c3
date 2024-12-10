@@ -56,10 +56,7 @@ fn void moving(long[] file_system) {
     if (id == EMPTY_VAL) continue;
 
     usz start_index = index;
-
-    defer {|
-      index = start_index;
-    |};
+    defer index = start_index;
 
     while (start_index > 0 && file_system[start_index-1] == id) start_index--;
     if (start_index == 0) break;
@@ -68,20 +65,12 @@ fn void moving(long[] file_system) {
 
     if (try gap_index = find_gap(file_system, lenght)) {
       if (gap_index > start_index) continue;
-      /* if (id == 2) {
-        io::printfn("Index: %d", index);
-        io::printfn("Start index: %d", start_index);
-        io::printfn("Gap index: %d", gap_index);
-        io::printfn("Length: %d", lenght);
-        io::printn(file_system[start_index:lenght]);
-        io::printn(file_system[gap_index:lenght]);
-      } */
+
       file_system[gap_index:lenght] = file_system[start_index:lenght];
       file_system[start_index:lenght] = EMPTY_VAL;
     }
   }
 
-  // io::printn(file_system);
   io::printfn("Checksum moving: %d", calculate_checksum(file_system));
 }
 
@@ -94,7 +83,10 @@ fn void main(String[] args) {
   file_system.temp_init();
 
   usz type, id;
-  while (try ch = input.read_byte() - 48) {
+  while (try ch = input.read_byte() - '0') {
+    // The file ends with newline, the - '0' causes an underflow, this way we skip it
+    if (ch > '9') break;
+
     usz val = EMPTY_VAL;
     if (type++ % 2 == 0) {
       val = id++;
