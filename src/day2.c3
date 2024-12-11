@@ -7,18 +7,20 @@ def Row = int[];
 
 List(<Row>) list;
 
-fn bool validate_levels(int index, int left, int right, bool is_ascending, bool debug = false) {
-  bool is_in_order = true;
-  if (index > 1) {
-    is_in_order = (!is_ascending && right < left) || (is_ascending && right > left);
-  }
-  usz distance = math::abs(right - left);
+fn int validate_row(Row row) {
+  bool ascending = row[0] < row[1];
+  foreach (int index, report: row) {
+    if (index < row.len - 1) {
+      int next = row[index+1];
 
-  if (debug) {
-    io::printfn("[%d] %d: %s (%d) prev %d", index, right, is_in_order ? "in-order" : "not-in-order", distance, left);
+      if (ascending && report > next) { return index; }
+      else if (!ascending && report < next) { return index; }
+      uint distance = math::abs(report - next);
+      if (distance > 3 || distance < 1) return index;
+    }
   }
 
-  return !is_in_order || (index > 0 && distance > 3 || distance < 1);
+  return -1;
 }
 
 fn void main (String[] args) {
@@ -46,43 +48,35 @@ fn void main (String[] args) {
   usz safe = 0;
   usz safe_with_tolerance = 0;
 
-  foreach (row_index, row: list) {
-    bool is_safe = true;
-    bool has_fault = false;
-    bool is_ascending = true;
-    int previous = 0;
-
-    foreach (i, report: row) {
-      if (i == 1) {
-        if (report < previous) is_ascending = false;
-      }
-
-      bool is_faulty = validate_levels((int)i, previous, report, is_ascending, false);
-
-      if (is_faulty) {
-        if (has_fault) {
-          is_safe = false;
-          break;
-        } else {
-          has_fault = true;
-        }
-      }
-      
-      if (!is_faulty) { previous = report; }
-      else {
-        if (i < row.len-1) {
-          int next = row[i+1];
-          bool next_ascending = i == 2 ? next > report : is_ascending;
-          bool next_is_faulty = validate_levels((int)(i+1), report, next, next_ascending, false);
-          if (!next_is_faulty) previous = report;
-        }
-      }
-    }
-
-    if (is_safe) {
+  foreach (row: list) {
+    int first_result = validate_row(row);
+    if (first_result == -1) {
+      safe++;
       safe_with_tolerance++;
+    } else {
+      Row new_row = mem::temp_new_array(int, row.len - 1);
+      if (first_result) {
+        new_row[0:first_result] = row[0:first_result];
+      }
+      new_row[first_result..] = row[first_result+1..];
 
-      if (!has_fault) safe++;
+      bool safe_without_one = validate_row(new_row) == -1;
+      // Try without the next element
+      if (!safe_without_one) {
+        new_row[first_result] = row[first_result];
+
+        safe_without_one = validate_row(new_row) == -1;
+      };
+      // Try without the first element, if second one fails
+      if (!safe_without_one && first_result == 1) {
+        new_row[0..] = row[1..];
+
+        safe_without_one = validate_row(new_row) == -1;
+      };
+
+      if (safe_without_one) {
+        safe_with_tolerance++;
+      }
     }
   }
 
