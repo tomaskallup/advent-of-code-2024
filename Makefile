@@ -9,8 +9,10 @@ DAY_BIN = bin/$(DAY_NAME)
 DAY_INP = inputs/$(DAY_NAME).txt
 DAY_INP_EX = inputs/$(DAY_NAME)-example.txt
 
-build: $(DAY_SRC)
-	mkdir -p bin
+bin:
+	mkdir bin
+
+build: bin $(DAY_SRC)
 	c3c compile $(DAY_SRC) -o $(DAY_BIN)
 
 run: build $(DAY_INP)
