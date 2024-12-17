@@ -15,8 +15,11 @@ bin:
 build: bin $(DAY_SRC)
 	c3c compile $(DAY_SRC) -o $(DAY_BIN)
 
+build-example: bin $(DAY_SRC)
+	c3c compile -D EXAMPLE $(DAY_SRC) -o $(DAY_BIN)
+
 run: build $(DAY_INP)
 	./$(DAY_BIN) $(DAY_INP)
 
-run-example: build $(DAY_INP_EX)
+run-example: build-example $(DAY_INP_EX)
 	./$(DAY_BIN) $(DAY_INP_EX)

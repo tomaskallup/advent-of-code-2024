@@ -43,7 +43,7 @@ fn void main(String[] args) {
 
   map.lines.temp_init();
 
-  while (try line = io::readline(&input)) {
+  while (try line = io::treadline(&input)) {
     map.lines.push(line);
   }
 

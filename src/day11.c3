@@ -51,7 +51,7 @@ fn void main(String[] args) {
 
   inital_stones.temp_init();
 
-  if (try line = io::readline(&input)) {
+  if (try line = io::treadline(&input)) {
     String[] nums = line.tsplit(" ");
     foreach (raw_num: nums) {
       inital_stones.push(raw_num.to_long()!!);
