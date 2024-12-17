@@ -6,6 +6,8 @@ def Vector2 = int[<2>];
 
 fn uint Vector2.hash(self) => self.x * 31 + self.y;
 
+// @TODO: Use a linked `Node` type, store its min-cost & use a PriorityQueue to perform A*, instead of just brute forcing all solutions
+
 struct Map {
   List(<String>) lines;
   Vector2 bounds;
