@@ -14,10 +14,7 @@ int instruction_pointer;
 
 fn long combo_to_value(char operand) {
   switch (operand) {
-    case 0: nextcase;
-    case 1: nextcase;
-    case 2: nextcase;
-    case 3: return (long)operand;
+    case 0..3: return (long)operand;
     case 4: return registers.a;
     case 5: return registers.b;
     case 6: return registers.c;
