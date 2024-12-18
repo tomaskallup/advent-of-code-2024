@@ -4,7 +4,7 @@ import std::collections::list;
 import std::collections::priorityqueue;
 
 struct Registers {
-  int a,b,c;
+  long a,b,c;
 }
 
 List(<char>) stack;
@@ -12,12 +12,12 @@ List(<char>) output;
 Registers registers;
 int instruction_pointer;
 
-fn int combo_to_value(char operand) {
+fn long combo_to_value(char operand) {
   switch (operand) {
     case 0: nextcase;
     case 1: nextcase;
     case 2: nextcase;
-    case 3: return (int)operand;
+    case 3: return (long)operand;
     case 4: return registers.a;
     case 5: return registers.b;
     case 6: return registers.c;
@@ -69,14 +69,14 @@ fn void run() {
   eval(opcode, operand);
 }
 
-fn int[] find_next(int a, char[] expected_output) {
-  int[8] possibilities;
+fn long[] find_next(long a, char[] expected_output) {
+  long[8] possibilities;
   usz found_count;
   // Each step of my program has `b = a%8` and everything after that
   // is dependend on value of `b`, so this step needs to be bruteforced
   // After that, a is divided by 2^3, which is just `a>>3`, so we reverse that and try every possible number from the modulo 8
   for (int i = 0; i < 8; i++) {
-    int new_a = (a << 3) + i;
+    long new_a = (a << 3) + i;
     registers = {
       new_a,
       0,
@@ -86,22 +86,28 @@ fn int[] find_next(int a, char[] expected_output) {
     output.clear();
 
     while (instruction_pointer < stack.len()) run();
-    io::printfn("Comparing (%d) %s with %s", a, output.array_view(), expected_output);
     if (output.len() == expected_output.len && output.array_view() == expected_output) {
       possibilities[found_count++] = new_a;
     }
   }
 
-  return possibilities[:found_count];
+  long[] result = mem::temp_new_array(long, found_count);
+  result[:found_count] = possibilities[:found_count];
+
+  return result;
 }
 
 struct NextDepth {
-  int a;
+  long a;
   usz output_index;
 }
 
 fn long NextDepth.compare_to(self, NextDepth other) {
-  return other.output_index - self.output_index;
+  // Descending for output_index
+  long index_diff = other.output_index - self.output_index;
+  if (index_diff != 0) return index_diff;
+  // Ascending for `a` value
+  return self.a - other.a;
 }
 
 def Queue = PriorityQueue(<NextDepth>);
@@ -168,20 +174,23 @@ fn void main(String[] args) {
    */
 
   output.clear();
-  int! a = SearchResult.MISSING?;
+  long! a = SearchResult.MISSING?;
   Queue queue;
   queue.temp_init();
   queue.push({ 0, stack.len() - 1 });
   
   while (try item = queue.pop()) {
+    long new_index = item.output_index;
+    long[] new_items = find_next(item.a, stack.array_view()[new_index..]);
+
     if (item.output_index == 0) {
-      // This is BFS, so the first value should be the lowest one
-      a = item.a;
-      break;
+      if (new_items.len) {
+        a = new_items[0];
+        break;
+      }
     } else {
-      long new_index = item.output_index;
-      int[] new_items = find_next(item.a, stack.array_view()[new_index..]);
       foreach(new_item: new_items) queue.push({new_item, new_index - 1});
+
     }
   }
 
