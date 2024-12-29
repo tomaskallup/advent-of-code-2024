@@ -1,11 +1,17 @@
 import std::io;
 import std::math;
 import std::collections::list;
-import std::sort;
+import std::collections::map;
 
-def Vector2 = int[<2>];
+def Vector2 = ichar[<2>];
 
-fn uint Vector2.hash(self) => self.x * 300 + self.y;
+// The Vector2 is limited to <0;0> - <3;3> in this case (for positions, which are the only ones used for hashing)
+// so we simply multiply x by 4 (max + 1) so that <1;0> (4) and <0;3> (3) do not have the same hash value
+// <0;0> (0) <0;1> (1) <0;2> (2) <0;3> (3)
+// <1;0> (4) <1;1> (5) <1;2> (6) <1;3> (7)
+// <2;0> (8) <2;1> (9) <2;2> (10) <2;3> (11)
+// <3;0> (12) <3;1> (13) <3;2> (14) <3;3> (15)
+fn char Vector2.hash(self) => self.x * 4 + self.y;
 
 /*
   Intended usage: (target - pos).to_directions();
@@ -78,11 +84,11 @@ struct State {
   Vector2[] keypads;
 }
 
-fn void State.reset(&self, usz count) {
+fn void State.reset(&self, short count) {
   self.keypads = mem::temp_new_array(Vector2, count);
 
   self.keypads[0] = numeric_pos('A');
-  usz index = 0;
+  short index = 0;
   while (++index < count) {
     self.keypads[index] = directional_pos('A');
   }
@@ -124,7 +130,7 @@ fn String[] get_combinations(String str) {
   return buttons.array_view();
 }
 
-fn bool State.validate_buttons(&self, usz keypad, String buttons) {
+fn bool State.validate_buttons(&self, short keypad, String buttons) {
   Vector2 blank = keypad == 0 ? numeric_pos('X') : directional_pos('X');
   Vector2 new_pos = self.keypads[keypad];
 
@@ -145,20 +151,42 @@ fn bool State.validate_buttons(&self, usz keypad, String buttons) {
   return true;
 }
 
-fn usz State.move_keypad_min(&self, usz keypad, char button) {
+// Nice & simple solution, storing 3 8bit numbers in a union
+// with a 32bit uint, so that the uint value contains them all and "calculates" the hash value for us
+union HashKey {
+  char[3] keys;
+  uint h;
+}
+
+fn uint HashKey.hash(self) => self.h;
+fn bool HashKey.equals(self, HashKey other) => self.h == other.h;
+
+HashMap(<HashKey, usz>) cache;
+
+fn usz State.move_keypad_min(&self, short keypad, char button) {
   // Last keypad is human, so we don't need to check all ways to get to a button, we just push it.
   if (keypad == self.keypads.len - 1) return 1;
 
+  Vector2 target = keypad == 0 ? numeric_pos(button) : directional_pos(button);
+  Vector2 pos = self.keypads[keypad];
+  Vector2 to_move = target - self.keypads[keypad];
+
+  // We are already there, so we just need to confirm
+  if (target == pos) return 1;
+
+  // Make sure to set the keypad pos
+  defer self.keypads[keypad] = target;
+
+  HashKey hash_key = {.keys = {pos.hash(), button, (char)keypad}};
+  if (try cached = cache.get(hash_key)) return cached;
+
   usz result = usz.max;
 
-  Vector2 target = keypad == 0 ? numeric_pos(button) : directional_pos(button);
-  Vector2 to_move = target - self.keypads[keypad];
+  // This is deliberately after the return of the cached value, so that this is unreachable if the value is already cached
+  defer cache.set(hash_key, result);
 
   String directions = to_move.to_directions();
   String winner;
-
-  // We are already there, so we just need to confirm
-  if (directions == "A") return 1;
 
   foreach(combination_directions: get_combinations(directions)) {
     // Ensure the combination is valid
@@ -182,7 +210,6 @@ fn usz State.move_keypad_min(&self, usz keypad, char button) {
       io::printfn("Winner %d -> %c: %d -> %s", keypad, button, keypad + 1, winner);
     }
   } */
-  self.keypads[keypad] = target;
 
   return result;
 }
@@ -209,10 +236,6 @@ fn void main(String[] args) {
 
   State state;
 
-  io::printn(codes);
-
-  state.reset(2);
-  io::printn(state);
   usz result;
   foreach (code: codes) {
     state.reset(4);
@@ -223,5 +246,18 @@ fn void main(String[] args) {
     result += complexity;
   }
 
-  io::printfn("Complexity for all codes: %d", result);
+  io::printfn("Complexity for all codes with 3 robots: %d", result);
+
+  result = 0;
+  cache.clear();
+  foreach (code: codes) {
+    state.reset(27);
+    int code_num = code[0..^2].to_int()!!;
+    usz length = state.solve(code);
+    usz complexity = length * code_num;
+    io::printfn("Solved code %s: %d (%d * %d)", code, complexity, length, code_num);
+    result += complexity;
+  }
+
+  io::printfn("Complexity for all codes with 26 robots: %d", result);
 }
