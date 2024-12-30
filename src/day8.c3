@@ -24,6 +24,7 @@ fn void Map.set(&self, Vec2f pos, char ch) @operator([]=) {
 
 fn usz Map.write(&self) {
   File output = file::open("map8.txt", "w")!!;
+  defer output.close()!!;
 
   usz! len;
 

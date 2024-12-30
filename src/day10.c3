@@ -40,6 +40,7 @@ fn void main(String[] args) {
   assert(args.len == 2, "Expected exactly 1 argument: the input file");
 
   File input = file::open(args[1], "r")!!;
+  defer input.close()!!;
 
   map.lines.temp_init();
 

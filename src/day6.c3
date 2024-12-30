@@ -76,6 +76,7 @@ fn bool Guard.advance(&self, bool custom_blockade = false) {
 
 fn usz Guard.write_map(&self, String name) {
   File output = file::open(name, "w")!!;
+  defer output.close()!!;
 
   usz! len;
 
@@ -113,6 +114,7 @@ fn void main (String[] args) {
   assert(args.len == 2, "Expected exactly 1 argument: the input file");
 
   File input = file::open(args[1], "r")!!;
+  defer input.close()!!;
 
   map.temp_init();
 
